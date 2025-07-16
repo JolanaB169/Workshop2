@@ -1,5 +1,5 @@
 from clcrypto import hash_password
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # class User
 class User:
@@ -132,6 +132,68 @@ class User:
             self._id = -1
 
 
+# class Message
+class Message:
+    """
+    Class representing a message from the 'messages' table in the database.
+    """
+    def __init__(self, from_id, to_id, text):
+        """
+        Initializes a new Message object.
+        :param from_id: ID of the sender.
+        :param to_id: ID of the receiver.
+        :param text: The message text.
+        """
+        self._id = -1 # -1 means the object is not yet saved to the database
+        self.from_id = from_id
+        self.to_id = to_id
+        self.text = text
+        self.creation_data = None # will be set when to database
 
+    @property
+    def id(self):
+        """
+        Returns the ID of the message.
+        """
+        return self._id
+
+    def save_to_db(self, cursor):
+        """
+        Saves the message to the database.
+        If the message is new (id == -1), inserts a new row.
+        If the message already exists, it will be updated.
+        """
+        if self._id == -1:
+            sql = """
+            INSERT INTO messages (from_id, to_id, text, creation_data)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+            """
+            self.creation_data = datetime.now()
+            cursor.execute(sql, (self.from_id, self.to_id, self.text, self.creation_data))
+            self._id = cursor.fetchone()[0]
+        else:
+            sql = """
+            UPDATE messages 
+            SET from_id=%s, to_id=%s, text=%s, creation_data=%s 
+            WHERE id=%s;
+            """
+            cursor.execute(sql, (self.from_id, self.to_id, self.text, self.creation_data, self._id))
+
+    @staticmethod
+    def load_all_messages(cursor):
+        """
+        Loads all messages from the database.
+        :param cursor: The database cursor.
+        :return: List of Message objects.
+        """
+        sql = "SELECT id, from_id, to_id, text, creation_data FROM messages ORDER BY creation_data;"
+        cursor.execute(sql)
+        messages = []
+        for id_, from_id, to_id, text, creation_data in cursor.fetchall():
+            message = Message(from_id, to_id, text)
+            message._id = id_
+            message.creation_data = creation_data
+            messages.append(message)
+        return messages
 
 
