@@ -1,5 +1,5 @@
 # Workshop2
-In this workshop you will create a simple message server. 
+In this workshop I will create a simple message server. 
 It will consist of four parts:      
 - a script that builds the database,     
 - a library for managing the database,
